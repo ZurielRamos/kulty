@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -19,6 +19,7 @@ export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
+    private readonly dataSource: DataSource,
     private readonly embeddingService: EmbeddingService,
     private readonly vectorSearchService: VectorSearchService,
     private readonly imageAnalysisService: ImageAnalysisService,
@@ -69,11 +70,16 @@ export class ProductsService {
     });
     const saved = await this.productRepo.save(product);
 
-    // 6. Generar y almacenar embedding
-    const embedding = await this.embeddingService.generateEmbedding(
-      analysis.embeddingText,
-    );
-    await this.vectorSearchService.upsertEmbedding(saved.id, embedding);
+    // 6. Generar y almacenar embedding (no bloquea si falla)
+    try {
+      const embedding = await this.embeddingService.generateEmbedding(
+        analysis.embeddingText,
+      );
+      await this.vectorSearchService.upsertEmbedding(saved.id, embedding);
+    } catch (error) {
+      // El producto se creó pero sin embedding - se puede regenerar después
+      console.error(`Error generando embedding para producto ${saved.id}:`, error.message);
+    }
 
     return saved;
   }
@@ -94,6 +100,32 @@ export class ProductsService {
       where: { isActive: true },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async findPaginated(
+    page: number,
+    limit: number,
+    category?: Category,
+    style?: Style,
+  ): Promise<{ data: Product[]; total: number; page: number; limit: number; totalPages: number }> {
+    const where: any = { isActive: true };
+    if (category) where.category = category;
+    if (style) where.style = style;
+
+    const [data, total] = await this.productRepo.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   findByCategory(category: Category): Promise<Product[]> {
@@ -171,5 +203,29 @@ export class ProductsService {
       categories: Object.values(Category),
       styles: Object.values(Style),
     };
+  }
+
+  /**
+   * Regenera embeddings para productos que no lo tienen
+   */
+  async regenerateEmbeddings() {
+    const products = await this.dataSource.query(
+      `SELECT id, "embeddingText" FROM products WHERE embedding_vector IS NULL AND "embeddingText" IS NOT NULL`,
+    );
+
+    let success = 0;
+    let failed = 0;
+
+    for (const product of products) {
+      try {
+        const embedding = await this.embeddingService.generateEmbedding(product.embeddingText);
+        await this.vectorSearchService.upsertEmbedding(product.id, embedding);
+        success++;
+      } catch {
+        failed++;
+      }
+    }
+
+    return { total: products.length, success, failed };
   }
 }

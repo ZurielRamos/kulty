@@ -43,7 +43,16 @@ export class ProductsController {
   findAll(
     @Query('category') category?: Category,
     @Query('style') style?: Style,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
+    // Si se piden page/limit, usar endpoint paginado
+    if (page || limit) {
+      const p = Math.max(1, parseInt(page || '1', 10));
+      const l = Math.min(50, Math.max(1, parseInt(limit || '20', 10)));
+      return this.productsService.findPaginated(p, l, category, style);
+    }
+
     if (category && style) {
       return this.productsService.findByCategoryAndStyle(category, style);
     }
@@ -66,6 +75,12 @@ export class ProductsController {
   @Get('filters')
   getFilters() {
     return this.productsService.getFilters();
+  }
+
+  // Regenerar embeddings faltantes
+  @Post('regenerate-embeddings')
+  regenerateEmbeddings() {
+    return this.productsService.regenerateEmbeddings();
   }
 
   @Get(':id')

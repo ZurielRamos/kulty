@@ -3,3 +3,6 @@ dist
 .env
 *.sqlite
 .DS_Store
+
+# Public website (repo independiente)
+web/

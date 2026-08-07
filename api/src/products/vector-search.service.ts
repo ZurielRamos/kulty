@@ -56,7 +56,7 @@ export class VectorSearchService implements OnModuleInit {
     const vectorStr = `[${queryEmbedding.join(',')}]`;
     const rows = await this.dataSource.query(
       `SELECT id FROM products
-       WHERE embedding_vector IS NOT NULL AND is_active = true
+       WHERE embedding_vector IS NOT NULL AND "isActive" = true
        ORDER BY embedding_vector <=> $1::vector
        LIMIT $2`,
       [vectorStr, limit],
