@@ -2,7 +2,7 @@ import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export function DashboardLayout() {
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-[#fef6f0] via-[#fdf2f8] to-[#f0f4ff] p-4 gap-4">
