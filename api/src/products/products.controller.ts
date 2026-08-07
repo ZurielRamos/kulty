@@ -77,7 +77,6 @@ export class ProductsController {
     return this.productsService.getFilters();
   }
 
-  // Regenerar embeddings faltantes
   @Post('regenerate-embeddings')
   regenerateEmbeddings() {
     return this.productsService.regenerateEmbeddings();

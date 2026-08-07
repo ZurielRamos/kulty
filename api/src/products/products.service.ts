@@ -205,6 +205,28 @@ export class ProductsService {
     };
   }
 
+  async regenerateAllEmbeddings(): Promise<{ processed: number; errors: number }> {
+    const products = await this.productRepo.find({ where: { isActive: true } });
+    let processed = 0;
+    let errors = 0;
+
+    for (const product of products) {
+      try {
+        const embeddingText = product.embeddingText || this.embeddingService.buildProductText(product);
+        if (!product.embeddingText) {
+          await this.productRepo.update(product.id, { embeddingText });
+        }
+        const embedding = await this.embeddingService.generateEmbedding(embeddingText);
+        await this.vectorSearchService.upsertEmbedding(product.id, embedding);
+        processed++;
+      } catch (e) {
+        errors++;
+      }
+    }
+
+    return { processed, errors };
+  }
+
   /**
    * Regenera embeddings para productos que no lo tienen
    */
