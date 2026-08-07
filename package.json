@@ -1,0 +1,16 @@
+{
+  "name": "kulty-shop",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n api,admin -c blue,green \"npm run dev:api\" \"npm run dev:admin\"",
+    "dev:api": "npm run start:dev --prefix api",
+    "dev:admin": "npm run dev --prefix admin",
+    "build": "npm run build:admin && npm run build:api",
+    "build:admin": "npm run build --prefix admin",
+    "build:api": "npm run build --prefix api",
+    "start:prod": "node api/dist/main.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
