@@ -4,6 +4,7 @@ import { ProductsPage } from './pages/ProductsPage';
 import { MockupsPage } from './pages/MockupsPage';
 import { UsersPage } from './pages/UsersPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { StorePage } from './pages/StorePage';
 import { LoginPage } from './pages/LoginPage';
 import { useAuth } from './context/AuthContext';
 
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/mockups" element={<MockupsPage />} />
         <Route path="/users" element={<UsersPage />} />
+        <Route path="/store" element={<StorePage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
     </Routes>

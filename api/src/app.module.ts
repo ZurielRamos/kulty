@@ -10,6 +10,7 @@ import { SettingsModule } from './settings/settings.module';
 import { UsersModule } from './users/users.module';
 import { BatchModule } from './batch/batch.module';
 import { AuthModule } from './auth/auth.module';
+import { StoreModule } from './store/store.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AuthModule } from './auth/auth.module';
     UsersModule,
     BatchModule,
     AuthModule,
+    StoreModule,
   ],
 })
 export class AppModule {}
