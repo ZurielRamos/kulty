@@ -41,10 +41,6 @@ export class Product {
   @Column({ nullable: true })
   embeddingText: string;
 
-  // Vector embedding (768 dimensiones) - pgvector
-  @Column({ type: 'varchar', nullable: true, select: false })
-  embedding_vector: string;
-
   // Mockup: plan de sudomock al momento de crear
   @Column({ type: 'varchar', nullable: true })
   mockup: string;

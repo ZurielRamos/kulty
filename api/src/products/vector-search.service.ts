@@ -12,24 +12,22 @@ export class VectorSearchService implements OnModuleInit {
     await this.dataSource.query('CREATE EXTENSION IF NOT EXISTS vector');
     this.logger.log('pgvector extension enabled');
 
-    // Cambiar tipo de columna a vector(768) si aún es varchar
+    // Crear columna vector si no existe (fuera de TypeORM para que no la toque)
     const col = await this.dataSource.query(`
       SELECT data_type FROM information_schema.columns
       WHERE table_name = 'products' AND column_name = 'embedding_vector'
     `);
 
-    if (col.length > 0 && col[0].data_type === 'character varying') {
-      await this.dataSource.query(`
-        ALTER TABLE products
-        ALTER COLUMN embedding_vector TYPE vector(768)
-        USING embedding_vector::vector(768)
-      `);
-      this.logger.log('embedding_vector column converted to vector(768)');
-    } else if (col.length === 0) {
+    if (col.length === 0) {
       await this.dataSource.query(
         `ALTER TABLE products ADD COLUMN embedding_vector vector(768)`,
       );
       this.logger.log('embedding_vector column created');
+    } else if (col[0].data_type === 'character varying') {
+      // Si TypeORM la recreó como varchar, convertirla
+      await this.dataSource.query(`ALTER TABLE products DROP COLUMN embedding_vector`);
+      await this.dataSource.query(`ALTER TABLE products ADD COLUMN embedding_vector vector(768)`);
+      this.logger.log('embedding_vector column recreated as vector(768)');
     }
 
     this.logger.log('vector search ready');
