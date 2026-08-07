@@ -17,7 +17,7 @@ import { StoreModule } from './store/store.module';
     ConfigModule.forRoot({ isGlobal: true }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'admin', 'dist'),
-      exclude: ['/api/{*path}'],
+      exclude: ['/api/(.*)'],
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
