@@ -67,8 +67,18 @@ export class ProductsController {
 
   // Búsqueda semántica
   @Get('search')
-  search(@Query('q') query: string, @Query('limit') limit?: number) {
-    return this.productsService.semanticSearch(query, limit || 10);
+  search(@Query('q') query: string, @Query('limit') limit?: number, @Query('offset') offset?: number) {
+    return this.productsService.semanticSearch(query, limit || 10, offset || 0);
+  }
+
+  // Búsqueda por similitud a un producto existente (usa su embedding, sin regenerar)
+  @Get('similar/:id')
+  similar(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+  ) {
+    return this.productsService.findSimilar(id, limit || 10, offset || 0);
   }
 
   // Opciones de filtro para el frontend

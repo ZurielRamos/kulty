@@ -1,8 +1,10 @@
 import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useStore } from '../context/StoreContext';
 
 export function DashboardLayout() {
   const { logout } = useAuth();
+  const { logo } = useStore();
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-[#fef6f0] via-[#fdf2f8] to-[#f0f4ff] p-4 gap-4">
@@ -10,8 +12,12 @@ export function DashboardLayout() {
       <aside className="w-16 flex flex-col items-center justify-between py-6 bg-white rounded-2xl shadow-sm">
         {/* Top section */}
         <div className="flex flex-col items-center gap-6">
-          <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-            <span className="text-white text-lg font-bold">K</span>
+          <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-orange-500">
+            {logo ? (
+              <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-white text-lg font-bold">K</span>
+            )}
           </div>
 
           <nav className="flex flex-col gap-3">

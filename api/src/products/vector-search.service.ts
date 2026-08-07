@@ -42,15 +42,29 @@ export class VectorSearchService implements OnModuleInit {
     );
   }
 
-  async searchSimilar(queryEmbedding: number[], limit = 10): Promise<number[]> {
+  async searchSimilar(queryEmbedding: number[], limit = 10, offset = 0): Promise<number[]> {
     const vectorStr = `[${queryEmbedding.join(',')}]`;
     const rows = await this.dataSource.query(
       `SELECT product_id FROM product_embeddings
        WHERE product_id IN (SELECT id FROM products WHERE "isActive" = true)
        ORDER BY embedding <=> $1::vector
-       LIMIT $2`,
-      [vectorStr, limit],
+       LIMIT $2 OFFSET $3`,
+      [vectorStr, limit, offset],
     );
     return rows.map((row: { product_id: number }) => row.product_id);
+  }
+
+  async getEmbedding(productId: number): Promise<number[] | null> {
+    const rows = await this.dataSource.query(
+      `SELECT embedding FROM product_embeddings WHERE product_id = $1`,
+      [productId],
+    );
+    if (rows.length === 0) return null;
+    // pgvector devuelve el vector como string "[0.1,0.2,...]"
+    const raw = rows[0].embedding;
+    if (typeof raw === 'string') {
+      return JSON.parse(raw.replace(/^\[/, '[').replace(/\]$/, ']'));
+    }
+    return raw;
   }
 }

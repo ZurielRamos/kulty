@@ -179,12 +179,30 @@ export class ProductsService {
     await this.productRepo.delete(id);
   }
 
-  async semanticSearch(query: string, limit = 10): Promise<Product[]> {
-    const queryEmbedding =
-      await this.embeddingService.generateEmbedding(query);
+  private embeddingCache = new Map<string, { embedding: number[]; timestamp: number }>();
+
+  async semanticSearch(query: string, limit = 10, offset = 0): Promise<Product[]> {
+    // Cachear embedding por 5 minutos para permitir paginación sin regenerar
+    const cacheKey = query.trim().toLowerCase();
+    let queryEmbedding: number[];
+
+    const cached = this.embeddingCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 300_000) {
+      queryEmbedding = cached.embedding;
+    } else {
+      queryEmbedding = await this.embeddingService.generateEmbedding(query);
+      this.embeddingCache.set(cacheKey, { embedding: queryEmbedding, timestamp: Date.now() });
+      // Limpiar cache viejo
+      if (this.embeddingCache.size > 100) {
+        const oldest = [...this.embeddingCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp)[0];
+        if (oldest) this.embeddingCache.delete(oldest[0]);
+      }
+    }
+
     const productIds = await this.vectorSearchService.searchSimilar(
       queryEmbedding,
       limit,
+      offset,
     );
 
     if (productIds.length === 0) return [];
@@ -194,6 +212,29 @@ export class ProductsService {
     });
 
     return productIds
+      .map((id) => products.find((p) => p.id === id))
+      .filter((p): p is Product => !!p);
+  }
+
+  async findSimilar(productId: number, limit = 10, offset = 0): Promise<Product[]> {
+    const embedding = await this.vectorSearchService.getEmbedding(productId);
+    if (!embedding) return [];
+
+    const productIds = await this.vectorSearchService.searchSimilar(
+      embedding,
+      limit + 1, // +1 porque se incluye a sí mismo
+      offset,
+    );
+
+    // Excluir el producto actual
+    const filteredIds = productIds.filter((id) => id !== productId).slice(0, limit);
+    if (filteredIds.length === 0) return [];
+
+    const products = await this.productRepo.find({
+      where: { id: In(filteredIds), isActive: true },
+    });
+
+    return filteredIds
       .map((id) => products.find((p) => p.id === id))
       .filter((p): p is Product => !!p);
   }
@@ -232,7 +273,9 @@ export class ProductsService {
    */
   async regenerateEmbeddings() {
     const products = await this.dataSource.query(
-      `SELECT id, "embeddingText" FROM products WHERE embedding_vector IS NULL AND "embeddingText" IS NOT NULL`,
+      `SELECT id, "embeddingText" FROM products
+       WHERE "embeddingText" IS NOT NULL AND "embeddingText" != ''
+       AND id NOT IN (SELECT product_id FROM product_embeddings)`,
     );
 
     let success = 0;

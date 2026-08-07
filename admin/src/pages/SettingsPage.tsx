@@ -10,6 +10,14 @@ interface SettingsGroup {
 
 const SETTINGS_GROUPS: SettingsGroup[] = [
   {
+    title: 'Tienda',
+    key: 'store',
+    description: 'Configuración general de la tienda',
+    fields: [
+      { key: 'STORE_LOGO', label: 'URL del Logo' },
+    ],
+  },
+  {
     title: 'OpenRouter',
     key: 'openrouter',
     description: 'API para análisis de imágenes y generación de embeddings',
